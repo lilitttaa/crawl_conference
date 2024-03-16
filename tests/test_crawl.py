@@ -63,12 +63,12 @@ def test_given_nips_main_page_when_retrieval_reinforcement_learning_then_get_pag
         assert reinforcement_learning_filter(item.title)
 
 
-def test_given_nips_poster_page_when_retrieval_then_get_abstract(
+def test_given_nips_poster_page_when_retrieval_then_get_poster_item(
     nips_poster_html_content,
 ):
-    abstract = NIPSPosterAbstractRetrieval().retrieval(nips_poster_html_content)
-    assert abstract is not None
-    assert len(abstract) > 0
+    nips_poster_item = NIPSPosterAbstractRetrieval().retrieval(nips_poster_html_content)
+    assert nips_poster_item.abstract is not None
+    assert nips_poster_item.author is not None
 
 
 def test_given_nips_main_page_url_when_request_then_get_html_content():

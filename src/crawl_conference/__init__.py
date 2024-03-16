@@ -94,11 +94,24 @@ class NIPSRetrieval:
                 )
 
 
+class NIPSPosterItem:
+    def __init__(self, author: str, abstract: str) -> None:
+        self.author = author
+        self.abstract = abstract
+
+    def __str__(self) -> str:
+        return f"author:[{self.author}]-abstract[{self.abstract}]"
+
+    def to_dict(self) -> dict:
+        return {"author": self.author, "abstract": self.abstract}
+
+
 class NIPSPosterAbstractRetrieval:
     def __init__(self) -> None:
         pass
 
-    def retrieval(self, html_content: str) -> str:
+    def retrieval(self, html_content: str) -> NIPSPosterItem:
         bs = BeautifulSoup(html_content, "html.parser")
         abstract = bs.select_one("#abstractExample").find("p").text
-        return abstract
+        author = bs.select_one(".card-subtitle").text
+        return NIPSPosterItem(author, abstract)
