@@ -1,9 +1,9 @@
-import asyncio
 import json
-from typing import Callable, List
-
+from typing import Callable, Dict, List
+from g4f.models import Model, RetryProvider, Liaobots
 from bs4 import BeautifulSoup
 from g4f.client import Client
+import requests
 
 
 def reinforcement_learning_filter(text: str) -> bool:
@@ -117,14 +117,14 @@ class NIPSPosterAbstractRetrieval:
         bs = BeautifulSoup(html_content, "html.parser")
         abstract_example = bs.select_one("#abstractExample")
         if abstract_example.find("p") is None:
-            abstract = abstract_example.text
+            abstract = abstract_example.text.strip()
         else:
-            abstract = abstract_example.find("p").text
+            abstract = abstract_example.find("p").text.strip()
+        if abstract.startswith("Abstract:"):
+            abstract = abstract[9:]
+        abstract = abstract.strip()
         author = bs.select_one(".card-subtitle").text.strip()
         return NIPSPosterItem(author, abstract)
-
-
-from g4f.models import Model, RetryProvider, Liaobots
 
 
 class TranslatorEN2ZH:
@@ -149,4 +149,161 @@ class TranslatorEN2ZH:
             result = json.loads(response.choices[0].message.content)
             return result["content"]
         except Exception as e:
-            raise Exception("Failed to translate") from e
+            raise Exception("Failed to translate, error: " + str(e)) from e
+
+
+class NIPSPosterJsonGenerator:
+    def __init__(
+        self,
+        main_page_json_save_path: str,
+        poster_abstract_json_save_path: str,
+        failed_poster_abstract_json_save_path: str,
+        failed_translate_abstract_json_save_path: str,
+    ) -> None:
+        self._main_page_url = "https://nips.cc/virtual/2023/calendar"
+        self._main_page_json_save_path = main_page_json_save_path
+        self._poster_abstract_json_save_path = poster_abstract_json_save_path
+        self._failed_poster_abstract_json_save_path = (
+            failed_poster_abstract_json_save_path
+        )
+        self._failed_translate_abstract_json_save_path = (
+            failed_translate_abstract_json_save_path
+        )
+
+    def generate_poster_file(self, filter: Callable[[str], bool]):
+        response = requests.get(self._main_page_url)
+        if response.status_code != 200:
+            return
+
+        page_info = NIPSRetrieval().retrieval(response.text, filter)
+        self._save_main_page(page_info)
+
+        poster_dict: Dict[str, dict] = {}
+        failed_posters: Dict[str, dict] = {}
+        for poster in page_info.posters:
+            self._try_retrieval_poster_item(
+                poster.url, poster.title, poster_dict, failed_posters
+            )
+
+        self._save_dict(poster_dict, self._poster_abstract_json_save_path)
+        self._save_dict(failed_posters, self._failed_poster_abstract_json_save_path)
+
+    def translate_poster_abstract(self, translator: TranslatorEN2ZH):
+        with open(self._poster_abstract_json_save_path, "r", encoding="utf-8") as f:
+            poster_dict = json.load(f)
+
+        failed_translations: Dict[str, dict] = {}
+        for title, poster_item in poster_dict.items():
+            self._try_translate_poster_abstract(
+                translator,
+                poster_item["url"],
+                title,
+                poster_dict,
+                failed_translations,
+            )
+
+        self._save_dict(poster_dict, self._poster_abstract_json_save_path)
+        self._save_dict(
+            failed_translations, self._failed_translate_abstract_json_save_path
+        )
+
+    def retranslate_from_failed(self, translator: TranslatorEN2ZH):
+        with open(
+            self._failed_translate_abstract_json_save_path, "r", encoding="utf-8"
+        ) as f:
+            failed_translations = json.load(f)
+        poster_dict: Dict[str, dict] = {}
+        refailed_translations: Dict[str, dict] = {}
+
+        with open(self._poster_abstract_json_save_path, "r", encoding="utf-8") as f:
+            poster_dict = json.load(f)
+
+        for title, error_and_url in failed_translations.items():
+            self._try_translate_poster_abstract(
+                translator,
+                error_and_url["url"],
+                title,
+                poster_dict,
+                refailed_translations,
+            )
+
+        self._save_dict(poster_dict, self._poster_abstract_json_save_path)
+        self._save_dict(
+            refailed_translations, self._failed_translate_abstract_json_save_path
+        )
+
+    def regenerate_from_failed(self):
+        with open(
+            self._failed_poster_abstract_json_save_path, "r", encoding="utf-8"
+        ) as f:
+            failed_posters = json.load(f)
+        poster_dict: Dict[str, dict] = {}
+        refailed_posters: Dict[str, dict] = {}
+
+        with open(self._poster_abstract_json_save_path, "r", encoding="utf-8") as f:
+            poster_dict = json.load(f)
+
+        for title, error_and_url in failed_posters.items():
+            self._try_retrieval_poster_item(
+                error_and_url["url"], title, poster_dict, refailed_posters
+            )
+
+        self._save_dict(poster_dict, self._poster_abstract_json_save_path)
+        self._save_dict(refailed_posters, self._failed_poster_abstract_json_save_path)
+
+    def _save_main_page(self, page_info):
+        with open(self._main_page_json_save_path, "w", encoding="utf-8") as f:
+            json.dump(
+                page_info.to_dict(),
+                f,
+                ensure_ascii=False,
+            )
+
+    def _save_dict(self, target_dict: dict, path: str):
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(target_dict, f, ensure_ascii=False)
+
+    def _try_translate_poster_abstract(
+        self,
+        translator: TranslatorEN2ZH,
+        url: str,
+        title: str,
+        poster_dict: Dict[str, dict],
+        failed_translations: Dict[str, dict],
+    ):
+        print("start to translate poster abstract, title: " + title)
+        try:
+            poster_dict[title]["abstract_zh"] = translator.translate(
+                poster_dict[title]["abstract"].replace("\\", "\\\\")
+            )
+            print("translate success, title: " + title)
+        except Exception as e:
+            failed_translations[title] = {
+                "error": str(e),
+                "url": url,
+            }
+            print("translate failed, title: " + title, "error: " + str(e))
+
+    def _try_retrieval_poster_item(
+        self,
+        url: str,
+        title: str,
+        poster_dict: Dict[str, dict],
+        failed_posters: Dict[str, dict],
+    ):
+        print("start to retrieve poster abstract, title: " + title + ", url: " + url)
+        try:
+            response = requests.get(url)
+            if response.status_code != 200:
+                raise Exception("Failed to retrieve poster page")
+            poster_item = NIPSPosterAbstractRetrieval().retrieval(response.text)
+            poster_dict[title] = {
+                "author": poster_item.author,
+                "abstract": poster_item.abstract,
+                "url": url,
+            }
+        except Exception as e:
+            failed_posters[title] = {
+                "error": str(e),
+                "url": url,
+            }
