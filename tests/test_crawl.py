@@ -109,9 +109,9 @@ def is_english(str):
         return True
 
 
-def is_chinese(str):
+def is_chinese(s: str):
     try:
-        str.encode(encoding="utf-8").decode("ascii")
+        s.encode(encoding="utf-8").decode("ascii")
     except UnicodeDecodeError:
         return True
     else:
