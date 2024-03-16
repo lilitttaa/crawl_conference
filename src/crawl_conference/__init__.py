@@ -15,6 +15,9 @@ class NIPSItem:
     def __str__(self) -> str:
         return f"url:[{self.url}]-title[{self.title}]"
 
+    def to_dict(self) -> dict:
+        return {"url": self.url, "title": self.title}
+
 
 class NIPSPageInfo:
     def __init__(self) -> None:
@@ -23,6 +26,15 @@ class NIPSPageInfo:
         self.workshops: List[NIPSItem] = []
         self.competitions: List[NIPSItem] = []
         self.posters: List[NIPSItem] = []
+
+    def to_dict(self) -> dict:
+        return {
+            "talks": [item.to_dict() for item in self.talks],
+            "expo_workshops": [item.to_dict() for item in self.expo_workshops],
+            "workshops": [item.to_dict() for item in self.workshops],
+            "competitions": [item.to_dict() for item in self.competitions],
+            "posters": [item.to_dict() for item in self.posters],
+        }
 
 
 class NIPSRetrieval:
@@ -77,7 +89,9 @@ class NIPSRetrieval:
         for panel in panels:
             a = panel.find("a")
             if text_filter(a.text):
-                store_container.append(NIPSItem(a["href"], a.text.strip()))
+                store_container.append(
+                    NIPSItem("https://nips.cc" + a["href"], a.text.strip())
+                )
 
 
 class NIPSPosterAbstractRetrieval:
