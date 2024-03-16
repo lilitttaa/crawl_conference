@@ -307,3 +307,19 @@ class NIPSPosterJsonGenerator:
                 "error": str(e),
                 "url": url,
             }
+
+
+class NIPSPosterJson2Md:
+    def __init__(self, poster_abstract_json_path: str) -> None:
+        self._poster_abstract_json_path = poster_abstract_json_path
+
+    def generate_md(self, output_path: str):
+        with open(self._poster_abstract_json_path, "r", encoding="utf-8") as f:
+            poster_dict = json.load(f)
+        with open(output_path, "w", encoding="utf-8") as f:
+            for title, poster_item in poster_dict.items():
+                f.write(f"## {title}\n")
+                f.write(f"**Author**: {poster_item['author']}\n\n")
+                f.write(f"**Abstract**: {poster_item['abstract']}\n\n")
+                f.write(f"**Abstract(Chinese)**: {poster_item['abstract_zh']}\n\n")
+                f.write(f"---\n\n")

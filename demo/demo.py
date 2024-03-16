@@ -7,6 +7,7 @@ import sys
 sys.path.append(r"./src/")
 print(sys.path, os.getcwd())
 from crawl_conference import (
+    NIPSPosterJson2Md,
     NIPSPosterJsonGenerator,
     TranslatorEN2ZH,
     reinforcement_learning_filter,
@@ -23,4 +24,7 @@ if __name__ == "__main__":
     # generator.generate_poster_file(reinforcement_learning_filter)
     # generator.regenerate_from_failed()
     # generator.translate_poster_abstract(TranslatorEN2ZH())
-    generator.retranslate_from_failed(TranslatorEN2ZH())
+    # generator.retranslate_from_failed(TranslatorEN2ZH())
+    # NIPSPosterJson2Md("./result/nips_2023_poster_abstract.json").generate_md(
+    #     "./result/nips_2023_poster_abstract.md"
+    # )
