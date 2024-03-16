@@ -117,5 +117,5 @@ class NIPSPosterAbstractRetrieval:
             abstract = abstract_example.text
         else:
             abstract = abstract_example.find("p").text
-        author = bs.select_one(".card-subtitle").text
+        author = bs.select_one(".card-subtitle").text.strip()
         return NIPSPosterItem(author, abstract)
