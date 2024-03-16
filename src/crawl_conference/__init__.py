@@ -322,4 +322,5 @@ class NIPSPosterJson2Md:
                 f.write(f"**Author**: {poster_item['author']}\n\n")
                 f.write(f"**Abstract**: {poster_item['abstract']}\n\n")
                 f.write(f"**Abstract(Chinese)**: {poster_item['abstract_zh']}\n\n")
+                f.write(f"**URL**: {poster_item['url']}\n\n")
                 f.write(f"---\n\n")
