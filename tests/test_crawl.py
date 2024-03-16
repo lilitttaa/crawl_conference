@@ -29,6 +29,16 @@ def nips_poster_html_content():
         return f.read()
 
 
+@pytest.fixture
+def nips_poster_html_content_2():
+    with open(
+        os.path.join(os.path.abspath(os.getcwd()), "tests/assets/poster2.html"),
+        "r",
+        encoding="utf-8",
+    ) as f:
+        return f.read()
+
+
 def test_given_nips_main_page_when_retrieval_then_get_page_info(nips_main_html_content):
     page_info = NIPSRetrieval().retrieval(nips_main_html_content, lambda text: True)
     assert page_info is not None
@@ -64,9 +74,15 @@ def test_given_nips_main_page_when_retrieval_reinforcement_learning_then_get_pag
 
 
 def test_given_nips_poster_page_when_retrieval_then_get_poster_item(
-    nips_poster_html_content,
+    nips_poster_html_content, nips_poster_html_content_2
 ):
     nips_poster_item = NIPSPosterAbstractRetrieval().retrieval(nips_poster_html_content)
+    assert nips_poster_item.abstract is not None
+    assert nips_poster_item.author is not None
+
+    nips_poster_item = NIPSPosterAbstractRetrieval().retrieval(
+        nips_poster_html_content_2
+    )
     assert nips_poster_item.abstract is not None
     assert nips_poster_item.author is not None
 

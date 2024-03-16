@@ -112,6 +112,10 @@ class NIPSPosterAbstractRetrieval:
 
     def retrieval(self, html_content: str) -> NIPSPosterItem:
         bs = BeautifulSoup(html_content, "html.parser")
-        abstract = bs.select_one("#abstractExample").find("p").text
+        abstract_example = bs.select_one("#abstractExample")
+        if abstract_example.find("p") is None:
+            abstract = abstract_example.text
+        else:
+            abstract = abstract_example.find("p").text
         author = bs.select_one(".card-subtitle").text
         return NIPSPosterItem(author, abstract)
