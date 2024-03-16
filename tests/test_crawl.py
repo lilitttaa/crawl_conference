@@ -7,7 +7,6 @@ from crawl_conference import NIPSRetrieval, reinforcement_learning_filter
 
 @pytest.fixture
 def nips_main_html_content():
-
     with open(
         os.path.join(os.path.abspath(os.getcwd()), "tests/assets/nips_2023.html"),
         "r",
