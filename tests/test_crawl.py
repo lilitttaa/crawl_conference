@@ -5,6 +5,7 @@ import requests
 from crawl_conference import (
     NIPSPosterAbstractRetrieval,
     NIPSRetrieval,
+    TranslatorEN2ZH,
     reinforcement_learning_filter,
 )
 
@@ -97,3 +98,32 @@ def test_given_nips_poster_url_when_request_then_get_html_content():
     response = requests.get("https://nips.cc/virtual/2023/poster/70701")
     assert response.status_code == 200
     assert response.text is not None
+
+
+def is_english(str):
+    try:
+        str.encode(encoding="utf-8").decode("ascii")
+    except UnicodeDecodeError:
+        return False
+    else:
+        return True
+
+
+def is_chinese(str):
+    try:
+        str.encode(encoding="utf-8").decode("ascii")
+    except UnicodeDecodeError:
+        return True
+    else:
+        return False
+
+
+def test_given_string_when_check_language_then_return_true_or_false():
+    assert is_english("hello") == True
+    assert is_english("你好") == False
+    assert is_chinese("hello") == False
+    assert is_chinese("你好") == True
+
+
+def test_given_en_string_when_translate_to_zh_then_return_zh_string():
+    assert is_chinese(TranslatorEN2ZH().translate("hello")) == True

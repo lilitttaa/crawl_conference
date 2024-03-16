@@ -1,6 +1,9 @@
+import asyncio
+import json
 from typing import Callable, List
 
 from bs4 import BeautifulSoup
+from g4f.client import Client
 
 
 def reinforcement_learning_filter(text: str) -> bool:
@@ -119,3 +122,31 @@ class NIPSPosterAbstractRetrieval:
             abstract = abstract_example.find("p").text
         author = bs.select_one(".card-subtitle").text.strip()
         return NIPSPosterItem(author, abstract)
+
+
+from g4f.models import Model, RetryProvider, Liaobots
+
+
+class TranslatorEN2ZH:
+    def __init__(self) -> None:
+        self._client = Client()
+
+    def translate(self, text: str) -> str:
+        try:
+            response = self._client.chat.completions.create(
+                model=Model(
+                    name="gpt-3.5-turbo",
+                    base_provider="openai",
+                    best_provider=RetryProvider([Liaobots]),
+                ),
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f'Please translate this text:[{text}] to Chinese, return json format like this: {{"content": "result"}}',
+                    }
+                ],
+            )
+            result = json.loads(response.choices[0].message.content)
+            return result["content"]
+        except Exception as e:
+            raise Exception("Failed to translate") from e
