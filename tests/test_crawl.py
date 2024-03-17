@@ -100,6 +100,47 @@ def test_given_nips_poster_url_when_request_then_get_html_content():
     assert response.text is not None
 
 
+class TestIJCAI:
+    @pytest.fixture
+    def ijcai_main_html_content(self):
+        with open(
+            os.path.join(os.path.abspath(os.getcwd()), "tests/assets/ijcai_23.html"),
+            "r",
+            encoding="utf-8",
+        ) as f:
+            return f.read()
+
+    def test_given_ijcai_main_page_url_when_request_then_get_html_content(self):
+        response = requests.get("https://ijcai-23.org/paper-schedule/")
+        assert response.status_code == 200
+        assert response.text is not None
+
+
+class TestKDD:
+    def test_given_kdd_main_page_url_when_request_then_get_html_content(self):
+        response = requests.get(
+            "https://kdd.org/kdd2023/wp-content/uploads/2023/08/toc.html"
+        )
+        assert response.status_code == 200
+        assert response.text is not None
+
+
+class TestCIKM:
+    def test_given_cikm_main_page_url_when_request_then_get_html_content(self):
+        response = requests.get(
+            "https://az659834.vo.msecnd.net/eventsairwesteuprod/production-uobevents-public/b11f094f1a6946f980322aab004e9a35"
+        )
+        assert response.status_code == 200
+        assert response.text is not None
+
+
+class TestWWW:
+    def test_given_www_main_page_url_when_request_then_get_html_content(self):
+        response = requests.get("https://www.sigweb.org/toc/www23.html")
+        assert response.status_code == 200
+        assert response.text is not None
+
+
 def is_english(str):
     try:
         str.encode(encoding="utf-8").decode("ascii")
